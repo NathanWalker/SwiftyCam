@@ -27,7 +27,7 @@ import AVFoundation
     
     /// Enumeration for Camera Selection
  
-   public enum CameraSelection {
+   @objc public enum CameraSelection {
     
         /// Camera on the back of the device
         case rear
@@ -39,7 +39,7 @@ import AVFoundation
      /// Enumeration for video quality of the capture session. Corresponds to a AVCaptureSessionPreset
 
     
-    public enum VideoQuality {
+    @objc public enum VideoQuality {
         
         /// AVCaptureSessionPresetHigh
         case high
