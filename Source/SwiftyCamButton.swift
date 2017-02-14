@@ -20,7 +20,7 @@ import UIKit
 
 /// Delegate for SwiftyCamButton
 
-public protocol SwiftyCamButtonDelegate {
+open protocol SwiftyCamButtonDelegate {
     
     /// Called when UITapGestureRecognizer begins
     
