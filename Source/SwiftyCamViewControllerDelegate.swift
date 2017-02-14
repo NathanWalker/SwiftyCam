@@ -20,7 +20,7 @@ import UIKit
 
 /// Delegate for SwiftyCamViewController
 
-open protocol SwiftyCamViewControllerDelegate {
+@objc public protocol SwiftyCamViewControllerDelegate {
     
     /**
      SwiftyCamViewControllerDelegate function called when the takePhoto() function is called.
