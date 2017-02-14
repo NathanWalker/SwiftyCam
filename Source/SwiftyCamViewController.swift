@@ -21,7 +21,7 @@ import AVFoundation
 
 /// A UIViewController Camera View Subclass
 
-open class SwiftyCamViewController: UIViewController {
+@objc open class SwiftyCamViewController: UIViewController {
     
     // MARK: Enumeration Declaration
     
