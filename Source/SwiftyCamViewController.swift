@@ -34,14 +34,6 @@ import AVFoundation
     
         /// Camera on the front of the device
         case front
-
-        func name() -> String {
-            switch self {
-                case .rear: return "rear"
-                case .front: return "front"
-
-            }
-        }
     }
  
      /// Enumeration for video quality of the capture session. Corresponds to a AVCaptureSessionPreset
@@ -78,40 +70,6 @@ import AVFoundation
         
         /// AVCaptureSessionPresetiFrame1280x720
         case iframe1280x720
-
-        func name() -> String {
-            switch self {
-                /// AVCaptureSessionPresetHigh
-                case .high: return "high"
-                
-                /// AVCaptureSessionPresetMedium
-                case .medium: return "medium"
-                
-                /// AVCaptureSessionPresetLow
-                case .low: return "low"
-                
-                /// AVCaptureSessionPreset352x288
-                case .resolution352x288: return "resolution352x288"
-                
-                /// AVCaptureSessionPreset640x480
-                case .resolution640x480: return "resolution640x480"
-                
-                /// AVCaptureSessionPreset1280x720
-                case .resolution1280x720: return "resolution1280x720"
-                
-                /// AVCaptureSessionPreset1920x1080
-                case .resolution1920x1080: return "resolution1920x1080"
-                
-                /// AVCaptureSessionPreset3840x2160
-                case .resolution3840x2160: return "resolution3840x2160"
-                
-                /// AVCaptureSessionPresetiFrame960x540
-                case .iframe960x540: return "iframe960x540"
-                
-                /// AVCaptureSessionPresetiFrame1280x720
-                case .iframe1280x720: return "iframe1280x720"
-            }
-        }
     }
     
     /** 
