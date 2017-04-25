@@ -28,11 +28,11 @@ import AVFoundation
         super.init(coder: aDecoder)
     }
     
-	var videoPreviewLayer: AVCaptureVideoPreviewLayer {
+	public var videoPreviewLayer: AVCaptureVideoPreviewLayer {
 		return layer as! AVCaptureVideoPreviewLayer
 	}
 	
-	var session: AVCaptureSession? {
+	public var session: AVCaptureSession? {
 		get {
 			return videoPreviewLayer.session
 		}
@@ -43,7 +43,7 @@ import AVFoundation
 	
 	// MARK: UIView
 	
-	override class var layerClass : AnyClass {
+	@objc override open class var layerClass : AnyClass {
 		return AVCaptureVideoPreviewLayer.self
 	}
 }
