@@ -27,7 +27,7 @@ import AVFoundation
 
 	/// Enumeration for Camera Selection
 
-	public enum CameraSelection: Int {
+	@objc public enum CameraSelection: Int {
 
 		/// Camera on the back of the device
 		case rear
@@ -39,7 +39,7 @@ import AVFoundation
 	/// Enumeration for video quality of the capture session. Corresponds to a AVCaptureSessionPreset
 
 
-	public enum VideoQuality: Int {
+	@objc public enum VideoQuality: Int {
 
 		/// AVCaptureSessionPresetHigh
 		case high
@@ -81,7 +81,7 @@ import AVFoundation
 	- configurationFailed: Unknown error
 	*/
 
-	public enum SessionSetupResult {
+	@objc public enum SessionSetupResult: Int {
 		case success
 		case notAuthorized
 		case configurationFailed
