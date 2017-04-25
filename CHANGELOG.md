@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Version 2.2.2
+- Fixed issue with landscape orientation 
+- Fixed issue with SwiftyCam crashing by multiple double-tap camera switching
+
+## Version 2.2.1
+- Added Carthage support
+
+## Version 2.2.0
+- Added support for landsacpe device orientations
+- Added maximum zoom level property
+
 ## Version 2.1.0
 - Added ability to change default camera orientation
 - Added `defaultCamera` property
