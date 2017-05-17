@@ -699,12 +699,12 @@ import AVFoundation
 
 	/// Orientation management
 
-	fileprivate func subscribeToDeviceOrientationChangeNotifications() {
+	@objc public func subscribeToDeviceOrientationChangeNotifications() {
 		self.deviceOrientation = UIDevice.current.orientation
 		NotificationCenter.default.addObserver(self, selector: #selector(deviceDidRotate), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
 	}
 
-	fileprivate func unsubscribeFromDeviceOrientationChangeNotifications() {
+	@objc public func unsubscribeFromDeviceOrientationChangeNotifications() {
 		NotificationCenter.default.removeObserver(self, name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
 		self.deviceOrientation = nil
 	}
@@ -715,7 +715,7 @@ import AVFoundation
 		}
 	}
     
-    fileprivate func getPreviewLayerOrientation() -> AVCaptureVideoOrientation {
+    @objc public func getPreviewLayerOrientation() -> AVCaptureVideoOrientation {
         // Depends on layout orientation, not device orientation
         switch UIApplication.shared.statusBarOrientation {
         case .portrait, .unknown:
@@ -729,7 +729,7 @@ import AVFoundation
         }
     }
 
-	fileprivate func getVideoOrientation() -> AVCaptureVideoOrientation {
+	@objc public func getVideoOrientation() -> AVCaptureVideoOrientation {
 		guard shouldUseDeviceOrientation, let deviceOrientation = self.deviceOrientation else { return previewLayer!.videoPreviewLayer.connection.videoOrientation }
 
 		switch deviceOrientation {
@@ -744,7 +744,7 @@ import AVFoundation
 		}
 	}
 
-	fileprivate func getImageOrientation(forCamera: CameraSelection) -> UIImageOrientation {
+	@objc public func getImageOrientation(forCamera: CameraSelection) -> UIImageOrientation {
 		guard shouldUseDeviceOrientation, let deviceOrientation = self.deviceOrientation else { return forCamera == .rear ? .right : .leftMirrored }
 
 		switch deviceOrientation {
@@ -767,7 +767,7 @@ import AVFoundation
 	- Returns: UIImage from the image data, adjusted for proper orientation.
 	*/
 
-	fileprivate func processPhoto(_ imageData: Data) -> UIImage {
+	@objc public func processPhoto(_ imageData: Data) -> UIImage {
 		let dataProvider = CGDataProvider(data: imageData as CFData)
 		let cgImageRef = CGImage(jpegDataProviderSource: dataProvider!, decode: nil, shouldInterpolate: true, intent: CGColorRenderingIntent.defaultIntent)
 
@@ -779,7 +779,7 @@ import AVFoundation
 		return image
 	}
 
-	fileprivate func capturePhotoAsyncronously(completionHandler: @escaping(Bool) -> ()) {
+	@objc public func capturePhotoAsyncronously(completionHandler: @escaping(Bool) -> ()) {
 		if let videoConnection = photoFileOutput?.connection(withMediaType: AVMediaTypeVideo) {
 
 			photoFileOutput?.captureStillImageAsynchronously(from: videoConnection, completionHandler: {(sampleBuffer, error) in
@@ -803,7 +803,7 @@ import AVFoundation
 
 	/// Handle Denied App Privacy Settings
 
-	fileprivate func promptToAppSettings() {
+	@objc public func promptToAppSettings() {
 		// prompt User with UIAlertView
 
 		DispatchQueue.main.async(execute: { [unowned self] in
@@ -831,7 +831,7 @@ import AVFoundation
 	- Returns: String representing a AVCapturePreset
 	*/
 
-	fileprivate func videoInputPresetFromVideoQuality(quality: VideoQuality) -> String {
+	@objc public func videoInputPresetFromVideoQuality(quality: VideoQuality) -> String {
 		switch quality {
 		case .high: return AVCaptureSessionPresetHigh
 		case .medium: return AVCaptureSessionPresetMedium
@@ -855,7 +855,7 @@ import AVFoundation
 
 	/// Get Devices
 
-	fileprivate class func deviceWithMediaType(_ mediaType: String, preferringPosition position: AVCaptureDevicePosition) -> AVCaptureDevice? {
+	@objc public class func deviceWithMediaType(_ mediaType: String, preferringPosition position: AVCaptureDevicePosition) -> AVCaptureDevice? {
 		if let devices = AVCaptureDevice.devices(withMediaType: mediaType) as? [AVCaptureDevice] {
 			return devices.filter({ $0.position == position }).first
 		}
@@ -864,7 +864,7 @@ import AVFoundation
 
 	/// Enable or disable flash for photo
 
-	fileprivate func changeFlashSettings(device: AVCaptureDevice, mode: AVCaptureFlashMode) {
+	@objc public func changeFlashSettings(device: AVCaptureDevice, mode: AVCaptureFlashMode) {
 		do {
 			try device.lockForConfiguration()
 			device.flashMode = mode
@@ -923,7 +923,7 @@ import AVFoundation
 
 	/// Sets whether SwiftyCam should enable background audio from other applications or sources
 
-	fileprivate func setBackgroundAudioPreference() {
+	@objc public func setBackgroundAudioPreference() {
 		guard allowBackgroundAudio == true else {
 			return
 		}
