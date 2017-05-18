@@ -709,7 +709,7 @@ import AVFoundation
 		self.deviceOrientation = nil
 	}
 
-	@objc fileprivate func deviceDidRotate() {
+	@objc public func deviceDidRotate() {
 		if !UIDevice.current.orientation.isFlat {
 			self.deviceOrientation = UIDevice.current.orientation
 		}
