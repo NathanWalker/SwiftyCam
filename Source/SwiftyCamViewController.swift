@@ -734,9 +734,11 @@ import AVFoundation
 
 		switch deviceOrientation {
 		case .landscapeLeft:
-			return .landscapeRight
+			// keep the same if using front camera
+			return self.currentCamera == .rear ? .landscapeRight : .landscapeLeft;
 		case .landscapeRight:
-			return .landscapeLeft
+			// keep the same if using front camera
+			return self.currentCamera == .rear ? .landscapeLeft : .landscapeRight;
 		case .portraitUpsideDown:
 			return .portraitUpsideDown
 		default:
