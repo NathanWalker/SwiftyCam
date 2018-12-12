@@ -26,7 +26,8 @@ import CoreMotion
     public var deviceOrientation : UIDeviceOrientation?
     public let coreMotionManager = CMMotionManager()
     
-    init() {
+    override public init() {
+      super.init()
         coreMotionManager.accelerometerUpdateInterval = 0.1
     }
     
