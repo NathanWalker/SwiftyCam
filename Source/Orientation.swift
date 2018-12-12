@@ -19,7 +19,7 @@ import UIKit
 import CoreMotion
 
 
-@objc open class Orientation  {
+@objc open class Orientation: NSObject  {
     
     var shouldUseDeviceOrientation: Bool  = false
     
