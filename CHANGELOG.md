@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## Master
+- Fixes an issue when Record button isn't getting correct callbacks
+- Fixes an when didFinishRecordingVideo wouldn't get a callback
+
+## Version 3.0.0
+- Swift 4.2 support
+
+## Version 2.6.0
+- Fixed issue with crashing during video recording
+- Using storyboard subviews should no longer require calling `bringSubvviewToFront`
+- Changed demo project to use autolayout
+- Reverted Swift4 changes to new branch
+
+## Version 2.4.0
+- Added support for no-audio video recording
+- Added `audioEnabled` property
+- Added support for Auto Rotate view
+- Added `allowAutoRotate` property
+- Added support for modifying the Preview Layer's Video Gravity
+- Added `videoGravity` property
+- Changed `session` to public
+- Changed `panGesture` and `pinchGesture` to public
+
 ## Version 2.3.0
 - Added support to vertically swipt to zoom
 - Added ```swipeToZoom``` property
