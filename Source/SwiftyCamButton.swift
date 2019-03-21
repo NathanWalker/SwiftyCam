@@ -48,7 +48,8 @@ import UIKit
 
 /// UIButton Subclass for Capturing Photo and Video with SwiftyCamViewController
 
-@objcMembers open class SwiftyCamButton: UIButton {
+@objcMembers
+@objc open class SwiftyCamButton: UIButton {
     
     /// Delegate variable
     

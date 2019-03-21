@@ -17,7 +17,8 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 import UIKit
 import AVFoundation
 
-@objcMembers open class PreviewView: UIView {
+@objcMembers
+@objc open class PreviewView: UIView {
     
     override init(frame: CGRect) {
         super.init(frame: frame)
