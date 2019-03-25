@@ -266,6 +266,8 @@ import AVFoundation
 		return allowAutoRotate
 	}
 
+	public var videoCodecType: AVVideoCodecType? = nil
+
 	// MARK: ViewDidLoad
 
 	/// ViewDidLoad Implementation
@@ -778,6 +780,15 @@ import AVFoundation
 				if connection.isVideoStabilizationSupported {
 					connection.preferredVideoStabilizationMode = .auto
 				}
+
+				if #available(iOS 11.0, *) {
+					if let videoCodecType = videoCodecType {
+						if movieFileOutput.availableVideoCodecTypes.contains(videoCodecType) == true {
+							movieFileOutput.setOutputSettings([AVVideoCodecKey: videoCodecType], for: connection)
+						}
+					}
+				}
+
 			}
 			self.movieFileOutput = movieFileOutput
 		}
