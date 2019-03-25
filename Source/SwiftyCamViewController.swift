@@ -784,7 +784,6 @@ import AVFoundation
 				if #available(iOS 11.0, *) {
 					if let videoCodecType = videoCodecType {
 						if movieFileOutput.availableVideoCodecTypes.contains(videoCodecType) == true {
-							// Use the H.264 codec to encode the video.
 							movieFileOutput.setOutputSettings([AVVideoCodecKey: videoCodecType], for: connection)
 						}
 					}
