@@ -519,6 +519,8 @@ import AVFoundation
         //Must be fetched before on main thread
         let previewOrientation = previewLayer.videoPreviewLayer.connection!.videoOrientation
 
+		updateVideoPreset()
+
 		sessionQueue.async { [unowned self] in
 			if !movieFileOutput.isRecording {
 				if UIDevice.current.isMultitaskingSupported {
@@ -669,19 +671,20 @@ import AVFoundation
 	}
 
 
-	// Front facing camera will always be set to VideoQuality.high
-	// If set video quality is not supported, videoQuality variable will be set to VideoQuality.high
+	private func updateVideoPreset() {
+		session.beginConfiguration()
+		configureVideoPreset()
+		session.commitConfiguration()
+	}
+
+	// If set video quality is not supported, videoQuality variable will be set to 480p
 	/// Configure image quality preset
 
 	fileprivate func configureVideoPreset() {
-		if currentCamera == .front {
-			session.sessionPreset = AVCaptureSession.Preset(rawValue: videoInputPresetFromVideoQuality(quality: .high))
+		if session.canSetSessionPreset(AVCaptureSession.Preset(rawValue: videoInputPresetFromVideoQuality(quality: videoQuality))) {
+			session.sessionPreset = AVCaptureSession.Preset(rawValue: videoInputPresetFromVideoQuality(quality: videoQuality))
 		} else {
-			if session.canSetSessionPreset(AVCaptureSession.Preset(rawValue: videoInputPresetFromVideoQuality(quality: videoQuality))) {
-				session.sessionPreset = AVCaptureSession.Preset(rawValue: videoInputPresetFromVideoQuality(quality: videoQuality))
-			} else {
-				session.sessionPreset = AVCaptureSession.Preset(rawValue: videoInputPresetFromVideoQuality(quality: .high))
-			}
+			session.sessionPreset = AVCaptureSession.Preset(rawValue: videoInputPresetFromVideoQuality(quality: .resolution640x480))
 		}
 	}
 
