@@ -80,11 +80,13 @@ import CoreMotion
         
         switch deviceOrientation {
         case .landscapeLeft:
+            return .landscapeRight
             // keep the same if using front camera
-            return forCamera == .rear ? .landscapeRight : .landscapeLeft;
+            // return forCamera == .rear ? .landscapeRight : .landscapeLeft;
         case .landscapeRight:
+            return .landscapeLeft
             // keep the same if using front camera
-            return forCamera == .rear ? .landscapeLeft : .landscapeRight;
+            // return forCamera == .rear ? .landscapeLeft : .landscapeRight;
         case .portraitUpsideDown:
             return .portraitUpsideDown
         default:
