@@ -20,7 +20,7 @@ import UIKit
 
 /// Delegate for SwiftyCamButton
 
-@objc public protocol SwiftyCamButtonDelegate {
+@objc public protocol SwiftyCamButtonDelegate: class {
     
     /// Called when UITapGestureRecognizer begins
     
@@ -47,13 +47,15 @@ import UIKit
 
 
 /// UIButton Subclass for Capturing Photo and Video with SwiftyCamViewController
-
-@objcMembers
-@objc open class SwiftyCamButton: UIButton {
+@objcMembers open class SwiftyCamButton: UIButton {
     
     /// Delegate variable
     
-    public var delegate: SwiftyCamButtonDelegate?
+    public weak var delegate: SwiftyCamButtonDelegate?
+    
+    // Sets whether button is enabled
+    
+    public var buttonEnabled = true
     
     /// Maximum duration variable
     
@@ -77,18 +79,28 @@ import UIKit
     /// UITapGestureRecognizer Function
     
     @objc fileprivate func Tap() {
-       self.delegate?.buttonWasTapped()
+        guard buttonEnabled == true else {
+            return
+        }
+        
+       delegate?.buttonWasTapped()
     }
     
     /// UILongPressGestureRecognizer Function
-
     @objc fileprivate func LongPress(_ sender:UILongPressGestureRecognizer!)  {
-        if (sender.state == UIGestureRecognizerState.ended) {
-            invalidateTimer()
-            self.delegate?.buttonDidEndLongPress()
-        } else if (sender.state == UIGestureRecognizerState.began) {
-            self.delegate?.buttonDidBeginLongPress()
+        guard buttonEnabled == true else {
+            return
+        }
+        
+        switch sender.state {
+        case .began:
+            delegate?.buttonDidBeginLongPress()
             startTimer()
+        case .cancelled, .ended, .failed:
+            invalidateTimer()
+            delegate?.buttonDidEndLongPress()
+        default:
+            break
         }
     }
     
@@ -96,7 +108,7 @@ import UIKit
     
     @objc fileprivate func timerFinished() {
         invalidateTimer()
-        self.delegate?.longPressDidReachMaximumDuration()
+        delegate?.longPressDidReachMaximumDuration()
     }
     
     /// Start Maximum Duration Timer
