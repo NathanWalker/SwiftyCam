@@ -39,7 +39,7 @@ import AVFoundation
 
 
 	@objc public enum VideoQuality: Int {
-
+        
 		/// AVCaptureSessionPresetHigh
 		case high
 
@@ -69,6 +69,9 @@ import AVFoundation
 
 		/// AVCaptureSessionPresetiFrame1280x720
 		case iframe1280x720
+        
+        /// AVCaptureSessionPresetPhoto
+        case photo
 	}
 
 	/**
@@ -158,7 +161,11 @@ import AVFoundation
     public var allowAutoRotate                = false
 
     /// Specifies the [videoGravity](https://developer.apple.com/reference/avfoundation/avcapturevideopreviewlayer/1386708-videogravity) for the preview layer.
-    public var videoGravity                   : SwiftyCamVideoGravity = .resizeAspect
+    public var videoGravity                   : SwiftyCamVideoGravity = .resizeAspect {
+        didSet {
+            previewLayer.gravity = videoGravity
+        }
+    }
 
     /// Sets whether or not video recordings will record audio
     /// Setting to true will prompt user for access to microphone on View Controller launch.
@@ -687,9 +694,17 @@ import AVFoundation
 			session.sessionPreset = AVCaptureSession.Preset(rawValue: videoInputPresetFromVideoQuality(quality: .resolution640x480))
 		}
 	}
-
+    
+    public func getAvailablePictureSizes(_ ratio: String) -> [String]{
+        cachedPictureRatioSizeMap[ratio]?.map({ (dim) -> String in
+            return String(dim.width) + "x" + String(dim.height)
+        }) ?? []
+    }
+    
+    private var cachedPictureRatioSizeMap: [String:[CMVideoDimensions]] = [:]
+    
+    var pictureSize = "0x0"
 	/// Add Video Inputs
-
 	fileprivate func addVideoInput() {
 		switch currentCamera {
 		case .front:
@@ -697,6 +712,46 @@ import AVFoundation
 		case .rear:
 			videoDevice = SwiftyCamViewController.deviceWithMediaType(AVMediaType.video.rawValue, preferringPosition: .back)
 		}
+        cachedPictureRatioSizeMap.removeAll()
+        var pictureSizes: [CMVideoDimensions] = []
+        if var formats = videoDevice?.formats {
+            formats.sort{
+                let dimA = $0.highResolutionStillImageDimensions
+                let dimB = $1.highResolutionStillImageDimensions
+                return dimA.width > dimB.width && dimA.height > dimB.height
+            }
+            for format  in formats {
+                if(!pictureSizes.contains { (dim) -> Bool in
+                    return dim.height == format.highResolutionStillImageDimensions.height && dim.width == format.highResolutionStillImageDimensions.width
+                }){
+                    let dim = format.highResolutionStillImageDimensions
+                    pictureSizes.append(dim)
+                    let ratio = Double(dim.width) / Double(dim.height)
+                    var key: String? = nil
+                    switch ratio {
+                    case 1.0:
+                       key = "1.0"
+                    case 1.2...1.2222222:
+                        key = "6:5"
+                    case 1.3...1.3333334:
+                        key = "4:3"
+                    case 1.77...1.7777778:
+                        key = "16:9"
+                    case 1.5:
+                        key = "3:2"
+                    default: break
+                    }
+                    if key != nil {
+                        var list = cachedPictureRatioSizeMap[key!]
+                        if list == nil {
+                            list = []
+                        }
+                        list?.append(dim)
+                        cachedPictureRatioSizeMap[key!] = list
+                    }
+                }
+            }
+        }
 
 		if let device = videoDevice {
 			do {
@@ -800,14 +855,48 @@ import AVFoundation
 	/// Configure Photo Output
 
 	fileprivate func configurePhotoOutput() {
-		let photoFileOutput = AVCaptureStillImageOutput()
+        if #available(iOS 10.0, *){
+            let output = AVCapturePhotoOutput()
+            if self.session.canAddOutput(output){
+                output.isHighResolutionCaptureEnabled = true
+                self.session.addOutput(output)
+                self.capturePhotoOutput = output
+            }
+            
+        }else {
+            let photoFileOutput = AVCaptureStillImageOutput()
 
-		if self.session.canAddOutput(photoFileOutput) {
-			photoFileOutput.outputSettings  = [AVVideoCodecKey: AVVideoCodecJPEG]
-			self.session.addOutput(photoFileOutput)
-			self.photoFileOutput = photoFileOutput
-		}
+            if self.session.canAddOutput(photoFileOutput) {
+                photoFileOutput.outputSettings  = [AVVideoCodecKey: AVVideoCodecJPEG]
+                self.session.addOutput(photoFileOutput)
+                self.photoFileOutput = photoFileOutput
+            }
+        }
 	}
+    
+    public var cropByPreview = false
+    
+    
+    private func calculateAspectRatioCrop(_ imageWidth: Int, _ imageHeight: Int) -> CGRect? {
+        if(cropByPreview) {
+            var previewSize: CGSize
+            if (UIApplication.shared.statusBarOrientation.isPortrait) {
+                previewSize = CGSize(width: self.previewLayer.frame.size.height, height: self.previewLayer.frame.size.width)
+              } else {
+                previewSize = CGSize(width: self.previewLayer.frame.size.width, height: self.previewLayer.frame.size.height)
+              }
+            return AVMakeRect(aspectRatio: previewSize, insideRect: CGRect(x: 0, y: 0, width: imageWidth, height: imageHeight))
+        }else {
+            let values = pictureSize.split(separator: "x")
+            let width = Int(values.first ?? "") ?? 0
+            let height = Int(values.last ?? "") ?? 0
+            if(width > 0 && height > 0){
+                return AVMakeRect(aspectRatio: CGSize(width: width, height: height), insideRect: CGRect(x: 0, y: 0, width: imageWidth, height: imageHeight))
+            }
+        }
+        return nil
+    }
+
 
 	/// Orientation management
 
@@ -887,39 +976,118 @@ import AVFoundation
 
 		// Set proper orientation for photo
 		// If camera is currently set to front camera, flip image
-
-		let image = UIImage(cgImage: cgImageRef!, scale: 1.0, orientation: self.orientation.getImageOrientation(forCamera: self.currentCamera))
+        
+        
+        var image: UIImage
+        let rectToCrop = self.calculateAspectRatioCrop(cgImageRef!.width, cgImageRef!.height)
+        if(rectToCrop != nil){
+            image = UIImage(cgImage: cgImageRef!.cropping(to: rectToCrop!)!, scale: 1, orientation: self.orientation.getImageOrientation(forCamera: self.currentCamera))
+        }else {
+            image = UIImage(cgImage: cgImageRef!, scale: 1, orientation: self.orientation.getImageOrientation(forCamera: self.currentCamera))
+        }
 
 		return image
 	}
 
 	@objc public func capturePhotoAsyncronously(completionHandler: @escaping(Bool) -> ()) {
-
         guard sessionRunning == true else {
             print("[SwiftyCam]: Cannot take photo. Capture session is not running")
             return
         }
+        
+        if #available(iOS 10.0, *){
+            self.capturePhotoOutputDelegate = AVCapturePhotoCaptureDelegateImpl(controller: self, completionHandler: completionHandler)
+            capturePhoto()
+        }else {
+            legacyCapturePhoto(completionHandler: completionHandler)
+        }
 
-		if let videoConnection = photoFileOutput?.connection(with: AVMediaType.video) {
-
-			photoFileOutput?.captureStillImageAsynchronously(from: videoConnection, completionHandler: {(sampleBuffer, error) in
-				if (sampleBuffer != nil) {
-					let imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(sampleBuffer!)
-					let image = self.processPhoto(imageData!)
-
-					// Call delegate and return new image
-					DispatchQueue.main.async {
-						self.cameraDelegate?.swiftyCam(self, didTake: image)
-					}
-					completionHandler(true)
-				} else {
-					completionHandler(false)
-				}
-			})
-		} else {
-			completionHandler(false)
-		}
 	}
+    
+    private func legacyCapturePhoto(completionHandler: @escaping(Bool) -> ()){
+        photoFileOutput?.isHighResolutionStillImageOutputEnabled = true
+        if let videoConnection = photoFileOutput?.connection(with: AVMediaType.video) {
+
+            photoFileOutput?.captureStillImageAsynchronously(from: videoConnection, completionHandler: {(sampleBuffer, error) in
+                if (sampleBuffer != nil) {
+                    let imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(sampleBuffer!)
+                    let image = self.processPhoto(imageData!)
+
+                    // Call delegate and return new image
+                    DispatchQueue.main.async {
+                        self.cameraDelegate?.swiftyCam(self, didTake: image)
+                    }
+                    completionHandler(true)
+                } else {
+                    completionHandler(false)
+                }
+            })
+        } else {
+            completionHandler(false)
+        }
+    }
+    
+    
+    private var capturePhotoOutput: Any?
+    
+    private var capturePhotoOutputDelegate: Any?
+    
+    
+    @available(iOS 10.0, *)
+    class AVCapturePhotoCaptureDelegateImpl: NSObject, AVCapturePhotoCaptureDelegate {
+        var controller: SwiftyCamViewController
+        var completionHandler: (Bool) -> ()
+        init(controller: SwiftyCamViewController, completionHandler: @escaping(Bool) -> ()) {
+            self.controller = controller
+            self.completionHandler = completionHandler
+        }
+        func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photoSampleBuffer: CMSampleBuffer?, previewPhoto previewPhotoSampleBuffer: CMSampleBuffer?, resolvedSettings: AVCaptureResolvedPhotoSettings, bracketSettings: AVCaptureBracketedStillImageSettings?, error: Error?) {
+            if(photoSampleBuffer != nil){
+                let imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(photoSampleBuffer!)
+                let image = controller.processPhoto(imageData!)
+
+                // Call delegate and return new image
+                DispatchQueue.main.async {
+                    self.controller.cameraDelegate?.swiftyCam(self.controller, didTake: image)
+                }
+                completionHandler(true)
+            }else {
+                completionHandler(false)
+            }
+        }
+        
+        
+        @available(iOS 11.0, *)
+        func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+            if let cgImage = photo.cgImageRepresentation()?.takeUnretainedValue() {
+                var image: UIImage
+                let rectToCrop = self.controller.calculateAspectRatioCrop(cgImage.width, cgImage.height)
+                if(rectToCrop != nil){
+                    image = UIImage(cgImage: cgImage.cropping(to: rectToCrop!)!, scale: 1, orientation: self.controller.orientation.getImageOrientation(forCamera: self.controller.currentCamera))
+                }else {
+                    image = UIImage(cgImage: cgImage, scale: 1, orientation: self.controller.orientation.getImageOrientation(forCamera: self.controller.currentCamera))
+                }
+                // Call delegate and return new image
+                DispatchQueue.main.async {
+                    self.controller.cameraDelegate?.swiftyCam(self.controller, didTake: image)
+                }
+            }else {
+                completionHandler(false)
+            }
+        }
+        
+    }
+    
+    @available(iOS 10.0, *)
+    private func capturePhoto(){
+        let options = AVCapturePhotoSettings()
+        options.isHighResolutionPhotoEnabled = true
+        if let capturePhotoOutput =  self.capturePhotoOutput as? AVCapturePhotoOutput {
+            if let delegate = self.capturePhotoOutputDelegate as? AVCapturePhotoCaptureDelegateImpl {
+                capturePhotoOutput.capturePhoto(with: options, delegate: delegate)
+            }
+        }
+    }
 
 	/// Handle Denied App Privacy Settings
 
@@ -932,9 +1100,9 @@ import AVFoundation
 			alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: "Alert OK button"), style: .cancel, handler: nil))
 			alertController.addAction(UIAlertAction(title: NSLocalizedString("Settings", comment: "Alert button to open Settings"), style: .default, handler: { action in
 				if #available(iOS 10.0, *) {
-					UIApplication.shared.openURL(URL(string: UIApplication.openSettingsURLString)!)
+                    UIApplication.shared.openURL(URL(string: UIApplication.openSettingsURLString)!)
 				} else {
-					if let appSettings = URL(string: UIApplication.openSettingsURLString) {
+                    if let appSettings = URL(string: UIApplication.openSettingsURLString) {
 						UIApplication.shared.openURL(appSettings)
 					}
 				}
@@ -962,6 +1130,7 @@ import AVFoundation
 		case .resolution1920x1080: return AVCaptureSession.Preset.hd1920x1080.rawValue
 		case .iframe960x540: return AVCaptureSession.Preset.iFrame960x540.rawValue
 		case .iframe1280x720: return AVCaptureSession.Preset.iFrame1280x720.rawValue
+        case .photo: return AVCaptureSession.Preset.photo.rawValue
 		case .resolution3840x2160:
 			if #available(iOS 9.0, *) {
 				return AVCaptureSession.Preset.hd4K3840x2160.rawValue
@@ -1070,10 +1239,10 @@ import AVFoundation
 
 		do{
             if #available(iOS 10.0, *) {
-                try AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .default, options: [.mixWithOthers, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
+                try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category.playAndRecord, mode: AVAudioSession.Mode.default, options: [.mixWithOthers, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
             } else {
                 let options: [AVAudioSession.CategoryOptions] = [.mixWithOthers, .allowBluetooth]
-                              let category = AVAudioSession.Category.playAndRecord
+                let category = AVAudioSession.Category.playAndRecord
                 let selector = NSSelectorFromString("setCategory:withOptions:error:")
                 AVAudioSession.sharedInstance().perform(selector, with: category, with: options)
             }
@@ -1212,7 +1381,7 @@ extension SwiftyCamViewController {
 		let x = tapPoint.y / screenSize.height
 		let y = 1.0 - tapPoint.x / screenSize.width
 		let focusPoint = CGPoint(x: x, y: y)
-
+        
 		if let device = videoDevice {
 			do {
 				try device.lockForConfiguration()
