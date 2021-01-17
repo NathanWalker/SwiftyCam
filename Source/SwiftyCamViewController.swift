@@ -329,43 +329,48 @@ import AVFoundation
         previewLayer.frame = self.view.bounds
 
     }
+    
+    
+    private func updatePreviewLayer() {
+           if let connection =  self.previewLayer?.videoPreviewLayer.connection  {
+
+               let currentDevice: UIDevice = UIDevice.current
+
+               let orientation: UIDeviceOrientation = currentDevice.orientation
+
+               let previewLayerConnection : AVCaptureConnection = connection
+
+               if previewLayerConnection.isVideoOrientationSupported {
+
+                   switch (orientation) {
+                   case .portrait: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait)
+
+                       break
+
+                   case .landscapeRight: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeLeft)
+
+                       break
+
+                   case .landscapeLeft: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeRight)
+
+                       break
+
+                   case .portraitUpsideDown: updatePreviewLayer(layer: previewLayerConnection, orientation: .portraitUpsideDown)
+
+                       break
+
+                   default: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait)
+
+                       break
+                   }
+               }
+           }
+       }
+
 
     override open func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-
-        if let connection =  self.previewLayer?.videoPreviewLayer.connection  {
-
-            let currentDevice: UIDevice = UIDevice.current
-
-            let orientation: UIDeviceOrientation = currentDevice.orientation
-
-            let previewLayerConnection : AVCaptureConnection = connection
-
-            if previewLayerConnection.isVideoOrientationSupported {
-
-                switch (orientation) {
-                case .portrait: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait)
-
-                    break
-
-                case .landscapeRight: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeLeft)
-
-                    break
-
-                case .landscapeLeft: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeRight)
-
-                    break
-
-                case .portraitUpsideDown: updatePreviewLayer(layer: previewLayerConnection, orientation: .portraitUpsideDown)
-
-                    break
-
-                default: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait)
-
-                    break
-                }
-            }
-        }
+        updatePreviewLayer()
     }
 
     // MARK: ViewWillAppear
@@ -404,6 +409,7 @@ import AVFoundation
                 // Preview layer video orientation can be set only after the connection is created
                 DispatchQueue.main.async {
                     self.previewLayer.videoPreviewLayer.connection?.videoOrientation = self.orientation.getPreviewLayerOrientation()
+                    self.updatePreviewLayer()
                 }
 
 			case .notAuthorized:
