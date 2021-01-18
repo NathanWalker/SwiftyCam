@@ -864,14 +864,18 @@ import AVFoundation
         if #available(iOS 10.0, *){
             let output = AVCapturePhotoOutput()
             if self.session.canAddOutput(output){
-                output.isHighResolutionCaptureEnabled = true
+                if(enableHighResolutionOutput){
+                    output.isHighResolutionCaptureEnabled = true
+                }
                 self.session.addOutput(output)
                 self.capturePhotoOutput = output
             }
             
         }else {
             let photoFileOutput = AVCaptureStillImageOutput()
-
+            if(enableHighResolutionOutput){
+                photoFileOutput.isHighResolutionStillImageOutputEnabled = true
+            }
             if self.session.canAddOutput(photoFileOutput) {
                 photoFileOutput.outputSettings  = [AVVideoCodecKey: AVVideoCodecJPEG]
                 self.session.addOutput(photoFileOutput)
@@ -1011,7 +1015,6 @@ import AVFoundation
 	}
     
     private func legacyCapturePhoto(completionHandler: @escaping(Bool) -> ()){
-        photoFileOutput?.isHighResolutionStillImageOutputEnabled = true
         if let videoConnection = photoFileOutput?.connection(with: AVMediaType.video) {
 
             photoFileOutput?.captureStillImageAsynchronously(from: videoConnection, completionHandler: {(sampleBuffer, error) in
@@ -1066,6 +1069,7 @@ import AVFoundation
         @available(iOS 11.0, *)
         func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
             if let cgImage = photo.cgImageRepresentation()?.takeUnretainedValue() {
+                print(cgImage)
                 var image: UIImage
                 let rectToCrop = self.controller.calculateAspectRatioCrop(cgImage.width, cgImage.height)
                 if(rectToCrop != nil){
@@ -1084,10 +1088,14 @@ import AVFoundation
         
     }
     
+    var enableHighResolutionOutput: Bool = false
+    
     @available(iOS 10.0, *)
     private func capturePhoto(){
         let options = AVCapturePhotoSettings()
-        options.isHighResolutionPhotoEnabled = true
+        if(enableHighResolutionOutput){
+            options.isHighResolutionPhotoEnabled = true
+        }
         if let capturePhotoOutput =  self.capturePhotoOutput as? AVCapturePhotoOutput {
             if let delegate = self.capturePhotoOutputDelegate as? AVCapturePhotoCaptureDelegateImpl {
                 capturePhotoOutput.capturePhoto(with: options, delegate: delegate)
