@@ -188,7 +188,7 @@
 					};
 					1675A9711E00A68300B80903 = {
 						CreatedOnToolsVersion = 8.1;
-						DevelopmentTeam = TG7LSJHB64;
+						DevelopmentTeam = "";
 						LastSwiftMigration = 1010;
 						ProvisioningStyle = Automatic;
 					};
@@ -449,7 +449,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				DEVELOPMENT_TEAM = TG7LSJHB64;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = DemoSwiftyCam/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -464,7 +464,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				DEVELOPMENT_TEAM = TG7LSJHB64;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = DemoSwiftyCam/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
