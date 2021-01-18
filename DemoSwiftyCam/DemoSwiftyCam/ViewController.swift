@@ -18,6 +18,10 @@ import UIKit
 import AVFoundation
 
 class ViewController: SwiftyCamViewController, SwiftyCamViewControllerDelegate {
+    func swiftyCamNotAuthorized(_ swiftyCam: SwiftyCamViewController) {
+        
+    }
+    
     
     @IBOutlet weak var captureButton    : SwiftyRecordButton!
     @IBOutlet weak var flipCameraButton : UIButton!
@@ -34,6 +38,7 @@ class ViewController: SwiftyCamViewController, SwiftyCamViewControllerDelegate {
         
         // disable capture button until session starts
         captureButton.buttonEnabled = false
+        videoQuality = .photo
 	}
 
 	override var prefersStatusBarHidden: Bool {

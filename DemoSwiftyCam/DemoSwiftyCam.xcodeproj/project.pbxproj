@@ -188,6 +188,7 @@
 					};
 					1675A9711E00A68300B80903 = {
 						CreatedOnToolsVersion = 8.1;
+						DevelopmentTeam = "";
 						LastSwiftMigration = 1010;
 						ProvisioningStyle = Automatic;
 					};
@@ -198,6 +199,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 				Base,
 			);
