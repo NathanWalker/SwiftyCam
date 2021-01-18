@@ -1069,7 +1069,6 @@ import AVFoundation
         @available(iOS 11.0, *)
         func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
             if let cgImage = photo.cgImageRepresentation()?.takeUnretainedValue() {
-                print(cgImage)
                 var image: UIImage
                 let rectToCrop = self.controller.calculateAspectRatioCrop(cgImage.width, cgImage.height)
                 if(rectToCrop != nil){
