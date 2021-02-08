@@ -1092,6 +1092,11 @@ import AVFoundation
     @available(iOS 10.0, *)
     private func capturePhoto(){
         let options = AVCapturePhotoSettings()
+		if(flashEnabled){
+            options.flashMode = .on
+        }else {
+            options.flashMode = .off
+        }
         if(enableHighResolutionOutput){
             options.isHighResolutionPhotoEnabled = true
         }
