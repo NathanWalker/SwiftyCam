@@ -87,7 +87,7 @@ import AVFoundation
 	
 	// MARK: UIView
 	
-	@objc override open class var layerClass : AnyClass {
+	override class var layerClass : AnyClass {
 		return AVCaptureVideoPreviewLayer.self
 	}
 }
