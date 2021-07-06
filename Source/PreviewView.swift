@@ -87,7 +87,7 @@ import AVFoundation
 	
 	// MARK: UIView
 	
-	override dynamic class var layerClass : AnyClass {
+	override open class var layerClass : AnyClass {
 		return AVCaptureVideoPreviewLayer.self
 	}
 }
