@@ -161,7 +161,7 @@ import AVFoundation
     public var allowAutoRotate                = false
 
     /// Specifies the [videoGravity](https://developer.apple.com/reference/avfoundation/avcapturevideopreviewlayer/1386708-videogravity) for the preview layer.
-    public var videoGravity                   : SwiftyCamVideoGravity = .resizeAspect {
+    public var videoGravity                   : SwiftyCamVideoGravity = .resizeAspectFill {
         didSet {
             previewLayer.gravity = videoGravity
         }
