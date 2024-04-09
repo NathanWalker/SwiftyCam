@@ -161,7 +161,7 @@ import AVFoundation
     public var allowAutoRotate                = false
 
     /// Specifies the [videoGravity](https://developer.apple.com/reference/avfoundation/avcapturevideopreviewlayer/1386708-videogravity) for the preview layer.
-    public var videoGravity                   : SwiftyCamVideoGravity = .resizeAspect {
+    public var videoGravity                   : SwiftyCamVideoGravity = .resizeAspectFill {
         didSet {
             previewLayer.gravity = videoGravity
         }
@@ -1068,7 +1068,13 @@ import AVFoundation
         
         @available(iOS 11.0, *)
         func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-            if let cgImage = photo.cgImageRepresentation()?.takeUnretainedValue() {
+            let cgImage: CGImage?
+            #if compiler(>=5.5)
+            cgImage = photo.cgImageRepresentation()
+            #else
+            cgImage = photo.cgImageRepresentation()?.takeUnretainedValue()
+            #endif
+            if let cgImage = cgImage {
                 var image: UIImage
                 let rectToCrop = self.controller.calculateAspectRatioCrop(cgImage.width, cgImage.height)
                 if(rectToCrop != nil){

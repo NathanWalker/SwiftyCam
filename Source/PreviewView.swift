@@ -37,9 +37,9 @@ import AVFoundation
     case resizeAspectFill
 }
 
-@objcMembers open class PreviewView: UIView {
+@objc open class PreviewView: UIView {
     
-    public var gravity: SwiftyCamVideoGravity = .resizeAspect {
+    @objc public var gravity: SwiftyCamVideoGravity = .resizeAspect {
         didSet {
             let previewlayer = layer as! AVCaptureVideoPreviewLayer
             switch gravity {
@@ -59,11 +59,11 @@ import AVFoundation
         self.backgroundColor = UIColor.black
     }
     
-    required public init?(coder aDecoder: NSCoder) {
+    @objc required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
     
-	public var videoPreviewLayer: AVCaptureVideoPreviewLayer {
+	@objc public var videoPreviewLayer: AVCaptureVideoPreviewLayer {
         let previewlayer = layer as! AVCaptureVideoPreviewLayer
         switch gravity {
         case .resize:
@@ -76,7 +76,7 @@ import AVFoundation
 		return previewlayer
 	}
 	
-	public var session: AVCaptureSession? {
+	@objc public var session: AVCaptureSession? {
 		get {
 			return videoPreviewLayer.session
 		}
@@ -87,7 +87,7 @@ import AVFoundation
 	
 	// MARK: UIView
 	
-	@objc override open class var layerClass : AnyClass {
+	override open class var layerClass : AnyClass {
 		return AVCaptureVideoPreviewLayer.self
 	}
 }
