@@ -21,6 +21,23 @@ import AVFoundation
 
 /// A UIViewController Camera View Subclass
 @objcMembers open class SwiftyCamViewController: UIViewController {
+    
+    /// Enumeration for Camera Lens
+
+      @objc public enum CameraLens: Int {
+          /// Auto switches lens when zooming
+          case auto
+
+          /// Telephoto Lens
+          case telephoto
+
+          /// Wide Lens
+          case wide
+          
+          /// Ultra Lens
+          case ultrawide
+      }
+
 
 	// MARK: Enumeration Declaration
 
@@ -147,6 +164,19 @@ import AVFoundation
 	/// Set default launch camera
 
 	public var defaultCamera                   = CameraSelection.rear
+    
+    
+    public var defaultLens = CameraLens.telephoto {
+         didSet {
+             if(sessionRunning){
+                 sessionQueue.async { [unowned self] in
+                     self.configureSession()
+                 }
+             }
+         }
+     }
+    
+    
 
 	/// Sets wether the taken photo or video should be oriented according to the device orientation
 
@@ -713,10 +743,10 @@ import AVFoundation
 	/// Add Video Inputs
 	fileprivate func addVideoInput() {
 		switch currentCamera {
-		case .front:
-			videoDevice = SwiftyCamViewController.deviceWithMediaType(AVMediaType.video.rawValue, preferringPosition: .front)
-		case .rear:
-			videoDevice = SwiftyCamViewController.deviceWithMediaType(AVMediaType.video.rawValue, preferringPosition: .back)
+        case .front:
+                    videoDevice = SwiftyCamViewController.deviceWithMediaType(AVMediaType.video.rawValue, preferringPosition: .front, lens: .wide)
+                case .rear:
+                    videoDevice = SwiftyCamViewController.deviceWithMediaType(AVMediaType.video.rawValue, preferringPosition: .back, lens: defaultLens)
 		}
         cachedPictureRatioSizeMap.removeAll()
         var pictureSizes: [CMVideoDimensions] = []
@@ -1168,28 +1198,49 @@ import AVFoundation
 
 	/// Get Devices
 
-	@objc public class func deviceWithMediaType(_ mediaType: String, preferringPosition position: AVCaptureDevice.Position) -> AVCaptureDevice? {
-		if #available(iOS 10.0, *) {
-				let avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInWideAngleCamera, for: AVMediaType(rawValue: mediaType), position: position)
-				return avDevice
-		} else {
-				// Fallback on earlier versions
-				let avDevice = AVCaptureDevice.devices(for: AVMediaType(rawValue: mediaType))
-				var avDeviceNum = 0
-				for device in avDevice {
-						print("deviceWithMediaType Position: \(device.position.rawValue)")
-						if device.position == position {
-								break
-						} else {
-								avDeviceNum += 1
-						}
-				}
-
-				return avDevice[avDeviceNum]
-		}
-
-		//return AVCaptureDevice.devices(for: AVMediaType(rawValue: mediaType), position: position).first
-	}
+    @objc public class func deviceWithMediaType(_ mediaType: String, preferringPosition position: AVCaptureDevice.Position, lens: CameraLens) -> AVCaptureDevice? {
+        if #available(iOS 10.0, *) {
+            var avDevice: AVCaptureDevice?
+            switch lens {
+            case .auto:
+                if #available(iOS 13.0, *) {
+                    avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInTripleCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                } else {
+                    avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInTelephotoCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                }
+                break
+            case .telephoto:
+                avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInTelephotoCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                break
+            case .wide:
+                avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInWideAngleCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                break
+            case .ultrawide:
+                if #available(iOS 13.0, *) {
+                    avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInUltraWideCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                } else {
+                    avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInWideAngleCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                }
+                break
+            }
+            return avDevice
+        } else {
+            // Fallback on earlier versions
+            let avDevice = AVCaptureDevice.devices(for: AVMediaType(rawValue: mediaType))
+            var avDeviceNum = 0
+            for device in avDevice {
+                if device.position == position {
+                    break
+                } else {
+                    avDeviceNum += 1
+                }
+            }
+            
+            return avDevice[avDeviceNum]
+        }
+        
+        //return AVCaptureDevice.devices(for: AVMediaType(rawValue: mediaType), position: position).first
+    }
 
 	/// Enable or disable flash for photo
 
@@ -1373,7 +1424,8 @@ extension SwiftyCamViewController {
 			return
 		}
 		do {
-			let captureDevice = AVCaptureDevice.devices().first
+            let captureDevice = videoDevice
+			//let captureDevice = AVCaptureDevice.devices().first
 			try captureDevice?.lockForConfiguration()
 
 			zoomScale = min(maxZoomScale, max(1.0, min(beginZoomScale * pinch.scale,  captureDevice!.activeFormat.videoMaxZoomFactor)))
@@ -1448,7 +1500,8 @@ extension SwiftyCamViewController {
         let translationDifference = currentTranslation - previousPanTranslation
 
         do {
-            let captureDevice = AVCaptureDevice.devices().first
+            //let captureDevice = AVCaptureDevice.devices().first
+            let captureDevice = videoDevice
             try captureDevice?.lockForConfiguration()
 
             let currentZoom = captureDevice?.videoZoomFactor ?? 0.0

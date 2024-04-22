@@ -39,6 +39,7 @@ class ViewController: SwiftyCamViewController, SwiftyCamViewControllerDelegate {
         // disable capture button until session starts
         captureButton.buttonEnabled = false
         videoQuality = .photo
+        defaultLens = .auto
 	}
 
 	override var prefersStatusBarHidden: Bool {
