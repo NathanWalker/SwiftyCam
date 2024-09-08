@@ -1240,9 +1240,17 @@ import AVFoundation
             switch lens {
             case .auto:
                 if #available(iOS 13.0, *) {
-                    avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInTripleCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                    avDevice = AVCaptureDevice.DiscoverySession(
+                        deviceTypes: [.builtInTripleCamera,.builtInWideAngleCamera],
+                          mediaType: AVMediaType(rawValue: mediaType),
+                          position: position
+                    ).devices.first
                 } else {
-                    avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInTelephotoCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                    avDevice = AVCaptureDevice.DiscoverySession(
+                        deviceTypes: [.builtInTelephotoCamera,.builtInWideAngleCamera],
+                          mediaType: AVMediaType(rawValue: mediaType),
+                          position: position
+                    ).devices.first
                 }
                 break
             case .telephoto:
