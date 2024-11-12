@@ -1214,7 +1214,11 @@ import AVFoundation
             
             break
         case .wide:
-            deviceTypes = [.builtInWideAngleCamera]
+            if #available(iOS 13.0, *) {
+                deviceTypes = [.builtInDualWideCamera,.builtInWideAngleCamera]
+            } else {
+                deviceTypes = [.builtInWideAngleCamera]
+            }
             break
         case .ultrawide:
             if #available(iOS 13.0, *) {
@@ -1231,8 +1235,11 @@ import AVFoundation
             position: position
         ).devices.first != nil
     }
+    
+    @objc public static var autoFallback: Bool = true
 
 	/// Get Devices
+    ///
 
     @objc public class func deviceWithMediaType(_ mediaType: String, preferringPosition position: AVCaptureDevice.Position, lens: CameraLens) -> AVCaptureDevice? {
         if #available(iOS 10.0, *) {
@@ -1241,7 +1248,7 @@ import AVFoundation
             case .auto:
                 if #available(iOS 13.0, *) {
                     avDevice = AVCaptureDevice.DiscoverySession(
-                        deviceTypes: [.builtInTripleCamera,.builtInWideAngleCamera],
+                        deviceTypes: [.builtInTripleCamera,.builtInDualWideCamera,.builtInWideAngleCamera],
                           mediaType: AVMediaType(rawValue: mediaType),
                           position: position
                     ).devices.first
@@ -1254,14 +1261,44 @@ import AVFoundation
                 }
                 break
             case .telephoto:
-                avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInTelephotoCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                if(autoFallback){
+                    avDevice = AVCaptureDevice.DiscoverySession(
+                        deviceTypes: [.builtInTelephotoCamera,.builtInWideAngleCamera],
+                          mediaType: AVMediaType(rawValue: mediaType),
+                          position: position
+                    ).devices.first
+                }else {
+                    avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInTelephotoCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                }
+                
                 break
             case .wide:
-                avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInWideAngleCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                if(autoFallback){
+                    if #available(iOS 13.0, *) {
+                        avDevice = AVCaptureDevice.DiscoverySession(
+                            deviceTypes: [.builtInDualWideCamera,.builtInWideAngleCamera],
+                            mediaType: AVMediaType(rawValue: mediaType),
+                            position: position
+                        ).devices.first
+                    } else {
+                        avDevice = AVCaptureDevice.DiscoverySession(
+                            deviceTypes: [.builtInWideAngleCamera],
+                            mediaType: AVMediaType(rawValue: mediaType),
+                            position: position
+                        ).devices.first
+                    }
+                }else {
+                    avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInWideAngleCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                }
+                
                 break
             case .ultrawide:
                 if #available(iOS 13.0, *) {
-                    avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInUltraWideCamera, for: AVMediaType(rawValue: mediaType), position: position)
+                    avDevice = AVCaptureDevice.DiscoverySession(
+                        deviceTypes: [ .builtInUltraWideCamera,.builtInDualWideCamera,.builtInWideAngleCamera],
+                        mediaType: AVMediaType(rawValue: mediaType),
+                        position: position
+                    ).devices.first
                 } else {
                     avDevice = AVCaptureDevice.default(AVCaptureDevice.DeviceType.builtInWideAngleCamera, for: AVMediaType(rawValue: mediaType), position: position)
                 }
