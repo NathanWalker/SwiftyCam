@@ -355,7 +355,6 @@ import AVFoundation
     private func updatePreviewLayer(layer: AVCaptureConnection, orientation: AVCaptureVideoOrientation) {
 
         layer.videoOrientation = orientation
-
         previewLayer.frame = self.view.bounds
 
     }
@@ -938,70 +937,6 @@ import AVFoundation
     }
 
 
-	/// Orientation management
-
-	// @objc public func subscribeToDeviceOrientationChangeNotifications() {
-	// 	self.deviceOrientation = UIDevice.current.orientation
-	// 	NotificationCenter.default.addObserver(self, selector: #selector(deviceDidRotate), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
-	// }
-
-	// @objc public func unsubscribeFromDeviceOrientationChangeNotifications() {
-	// 	NotificationCenter.default.removeObserver(self, name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
-	// 	self.deviceOrientation = nil
-	// }
-
-	// @objc public func deviceDidRotate() {
-	// 	if !UIDevice.current.orientation.isFlat {
-	// 		self.deviceOrientation = UIDevice.current.orientation
-	// 	}
-	// }
-    
-  //   @objc public func getPreviewLayerOrientation() -> AVCaptureVideoOrientation {
-  //       // Depends on layout orientation, not device orientation
-  //       switch UIApplication.shared.statusBarOrientation {
-  //       case .portrait, .unknown:
-  //           return AVCaptureVideoOrientation.portrait
-  //       case .landscapeLeft:
-  //           return AVCaptureVideoOrientation.landscapeLeft
-  //       case .landscapeRight:
-  //           return AVCaptureVideoOrientation.landscapeRight
-  //       case .portraitUpsideDown:
-  //           return AVCaptureVideoOrientation.portraitUpsideDown
-  //       }
-  //   }
-
-	// @objc public func getVideoOrientation() -> AVCaptureVideoOrientation {
-	// 	guard shouldUseDeviceOrientation, let deviceOrientation = self.deviceOrientation else { return previewLayer!.videoPreviewLayer.connection.videoOrientation }
-
-	// 	switch deviceOrientation {
-	// 	case .landscapeLeft:
-	// 		// keep the same if using front camera
-	// 		return self.currentCamera == .rear ? .landscapeRight : .landscapeLeft;
-	// 	case .landscapeRight:
-	// 		// keep the same if using front camera
-	// 		return self.currentCamera == .rear ? .landscapeLeft : .landscapeRight;
-	// 	case .portraitUpsideDown:
-	// 		return .portraitUpsideDown
-	// 	default:
-	// 		return .portrait
-	// 	}
-	// }
-
-	// @objc public func getImageOrientation(forCamera: CameraSelection) -> UIImageOrientation {
-	// 	guard shouldUseDeviceOrientation, let deviceOrientation = self.deviceOrientation else { return forCamera == .rear ? .right : .leftMirrored }
-
-	// 	switch deviceOrientation {
-	// 	case .landscapeLeft:
-	// 		return forCamera == .rear ? .up : .downMirrored
-	// 	case .landscapeRight:
-	// 		return forCamera == .rear ? .down : .upMirrored
-	// 	case .portraitUpsideDown:
-	// 		return forCamera == .rear ? .left : .rightMirrored
-	// 	default:
-	// 		return forCamera == .rear ? .right : .leftMirrored
-	// 	}
-	// }
-
 	/**
 	Returns a UIImage from Image Data.
 
@@ -1098,26 +1033,48 @@ import AVFoundation
         
         @available(iOS 11.0, *)
         func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-            let cgImage: CGImage?
-            #if compiler(>=5.5)
-            cgImage = photo.cgImageRepresentation()
-            #else
-            cgImage = photo.cgImageRepresentation()?.takeUnretainedValue()
-            #endif
-            if let cgImage = cgImage {
-                var image: UIImage
-                let rectToCrop = self.controller.calculateAspectRatioCrop(cgImage.width, cgImage.height)
-                if(rectToCrop != nil){
-                    image = UIImage(cgImage: cgImage.cropping(to: rectToCrop!)!, scale: 1, orientation: self.controller.orientation.getImageOrientation(forCamera: self.controller.currentCamera))
-                }else {
-                    image = UIImage(cgImage: cgImage, scale: 1, orientation: self.controller.orientation.getImageOrientation(forCamera: self.controller.currentCamera))
+            if let error = error {
+                print("[SwiftyCam]: \(error)")
+                completionHandler(false)
+            }else if let imageData = photo.fileDataRepresentation(),
+                     var image = UIImage(data: imageData){
+                
+                if let rectToCrop = self.controller.calculateAspectRatioCrop(Int(image.size.width * image.scale), Int(image.size.height * image.scale)) {
+                    let renderer = UIGraphicsImageRenderer(size: rectToCrop.size)
+                    
+                    let croppedImage = renderer.image { _ in
+                        image.draw(at: CGPoint(x: -rectToCrop.origin.x, y: -rectToCrop.origin.y))
+                    }
+                    image = croppedImage
                 }
-                // Call delegate and return new image
+                
                 DispatchQueue.main.async {
                     self.controller.cameraDelegate?.swiftyCam(self.controller, didTake: image)
                 }
+                
             }else {
-                completionHandler(false)
+                let cgImage: CGImage?
+                #if compiler(>=5.5)
+                cgImage = photo.cgImageRepresentation()
+                #else
+                cgImage = photo.cgImageRepresentation()?.takeUnretainedValue()
+                #endif
+                if let cgImage = cgImage {
+                    var image: UIImage
+                    let rectToCrop = self.controller.calculateAspectRatioCrop(cgImage.width, cgImage.height)
+                    let orientation = self.controller.orientation.getImageOrientation(forCamera: self.controller.currentCamera)
+                    if(rectToCrop != nil){
+                        image = UIImage(cgImage: cgImage.cropping(to: rectToCrop!)!, scale: 1, orientation: orientation)
+                    }else {
+                        image = UIImage(cgImage: cgImage, scale: 1, orientation: orientation)
+                    }
+                    // Call delegate and return new image
+                    DispatchQueue.main.async {
+                        self.controller.cameraDelegate?.swiftyCam(self.controller, didTake: image)
+                    }
+                }else {
+                    completionHandler(false)
+                }
             }
         }
         
@@ -1651,7 +1608,7 @@ extension SwiftyCamViewController : UIGestureRecognizerDelegate {
 
 	public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
 		if gestureRecognizer.isKind(of: UIPinchGestureRecognizer.self) {
-			beginZoomScale = zoomScale;
+			beginZoomScale = zoomScale
 		}
 		return true
 	}
