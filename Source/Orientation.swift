@@ -23,12 +23,23 @@ import CoreMotion
     
     var shouldUseDeviceOrientation: Bool  = false
     
+    var shouldUseDeviceOrientationForPreview: Bool  = false
+    
     public var deviceOrientation : UIDeviceOrientation?
     public let coreMotionManager = CMMotionManager()
-    
+    public var changeListener: ((UIDeviceOrientation) -> Void)?
+        
     override public init() {
       super.init()
         coreMotionManager.accelerometerUpdateInterval = 0.1
+    }
+    
+    public init(controller : SwiftyCamViewController) {
+      super.init()
+        coreMotionManager.accelerometerUpdateInterval = 0.1
+        changeListener = { [weak controller] orientation in
+            controller?.orientationChanged()
+        }
     }
     
     func start() {
@@ -62,17 +73,33 @@ import CoreMotion
     }
     
     func getPreviewLayerOrientation() -> AVCaptureVideoOrientation {
-        // Depends on layout orientation, not device orientation
-        switch UIApplication.shared.statusBarOrientation {
-        case .portrait, .unknown:
-            return AVCaptureVideoOrientation.portrait
-        case .landscapeLeft:
-            return AVCaptureVideoOrientation.landscapeLeft
-        case .landscapeRight:
-            return AVCaptureVideoOrientation.landscapeRight
-        case .portraitUpsideDown:
-            return AVCaptureVideoOrientation.portraitUpsideDown
+        
+        guard shouldUseDeviceOrientation, let deviceOrientation = self.deviceOrientation else {
+            // Depends on layout orientation, not device orientation
+            switch UIApplication.shared.statusBarOrientation {
+            case .portrait, .unknown:
+                return AVCaptureVideoOrientation.portrait
+            case .landscapeLeft:
+                return AVCaptureVideoOrientation.landscapeLeft
+            case .landscapeRight:
+                return AVCaptureVideoOrientation.landscapeRight
+            case .portraitUpsideDown:
+                return AVCaptureVideoOrientation.portraitUpsideDown
+            }
         }
+        
+        
+        switch deviceOrientation {
+        case .landscapeLeft:
+            return .landscapeRight
+        case .landscapeRight:
+            return .landscapeLeft
+        case .portraitUpsideDown:
+            return .portraitUpsideDown
+        default:
+            return .portrait
+        }
+        
     }
     
     func getVideoOrientation() -> AVCaptureVideoOrientation? {
@@ -91,6 +118,7 @@ import CoreMotion
     }
     
     private func handleAccelerometerUpdate(data: CMAccelerometerData){
+        let current = deviceOrientation
         if(abs(data.acceleration.y) < abs(data.acceleration.x)){
             if(data.acceleration.x > 0){
                 deviceOrientation = UIDeviceOrientation.landscapeRight
@@ -102,6 +130,12 @@ import CoreMotion
                 deviceOrientation = UIDeviceOrientation.portraitUpsideDown
             } else {
                 deviceOrientation = UIDeviceOrientation.portrait
+            }
+        }
+        
+        if(current != deviceOrientation){
+            if let deviceOrientation = deviceOrientation {
+                changeListener?(deviceOrientation)
             }
         }
     }

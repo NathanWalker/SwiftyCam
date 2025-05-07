@@ -176,11 +176,17 @@ import AVFoundation
          }
      }
     
+    public var shouldUseDeviceOrientationForPreview  = false {
+        didSet {
+            orientation.shouldUseDeviceOrientationForPreview = shouldUseDeviceOrientationForPreview
+        }
+    }
+    
     
 
 	/// Sets wether the taken photo or video should be oriented according to the device orientation
 
-    public var shouldUseDeviceOrientation      = false {
+    public var shouldUseDeviceOrientation  = false {
         didSet {
             orientation.shouldUseDeviceOrientation = shouldUseDeviceOrientation
         }
@@ -290,8 +296,17 @@ import AVFoundation
     public var previousPanTranslation       : CGFloat = 0.0
 
 	/// Last changed orientation
+    ///
 
-    public var orientation                  : Orientation = Orientation()
+    internal func orientationChanged(){
+        if(shouldUseDeviceOrientationForPreview){
+            updatePreviewLayer()
+        }
+    }
+    
+    public lazy var orientation: Orientation = {
+       return Orientation(controller: self)
+    }()
 
     /// Boolean to store when View Controller is notified session is running
 
@@ -462,7 +477,7 @@ import AVFoundation
 
 
 	override open func viewDidDisappear(_ animated: Bool) {
-		super.viewDidDisappear(animated)
+        super.viewDidDisappear(animated)
 
         NotificationCenter.default.removeObserver(self)
         sessionRunning = false
