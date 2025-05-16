@@ -23,37 +23,68 @@ import CoreMotion
     
     var shouldUseDeviceOrientation: Bool  = false
     
-    var shouldUseDeviceOrientationForPreview: Bool  = false
-    
     public var deviceOrientation : UIDeviceOrientation?
     public let coreMotionManager = CMMotionManager()
-    public var changeListener: ((UIDeviceOrientation) -> Void)?
-        
+    internal var controller: SwiftyCamViewController?
+    
     override public init() {
       super.init()
-        coreMotionManager.accelerometerUpdateInterval = 0.1
+       // coreMotionManager.accelerometerUpdateInterval = 0.1
+        coreMotionManager.deviceMotionUpdateInterval = 0.2
+        coreMotionManager.startDeviceMotionUpdates(using: .xArbitraryZVertical)
     }
     
-    public init(controller : SwiftyCamViewController) {
-      super.init()
-        coreMotionManager.accelerometerUpdateInterval = 0.1
-        changeListener = { [weak controller] orientation in
-            controller?.orientationChanged()
+    func orientationFrom(attitude: CMAttitude) -> UIDeviceOrientation {
+        let pitch = attitude.pitch * (180.0 / .pi)
+        let roll = attitude.roll * (180.0 / .pi)
+
+        if abs(pitch) < 45 {
+            if roll > 45 {
+                return .landscapeRight
+            } else if roll < -45 {
+                return .landscapeLeft
+            }
         }
+        
+
+        if pitch > 45 {
+            return .portrait
+        } else if pitch < -45 {
+            return .portraitUpsideDown
+        }
+
+
+        return .unknown
     }
     
     func start() {
         self.deviceOrientation = UIDevice.current.orientation
-        coreMotionManager.startAccelerometerUpdates(to: .main) { [weak self] (data, error) in
-            guard let data = data else {
-                return
+        
+        
+        coreMotionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, error in
+            guard let motion = motion else { return }
+
+            let attitude = motion.attitude
+            let orientation = self?.orientationFrom(attitude: attitude)
+
+            if let orientation = orientation {
+                self?.deviceOrientation = orientation
+                self?.controller?.updateOrientation(orientation)
             }
-            self?.handleAccelerometerUpdate(data: data)
         }
+        
+        
+//        coreMotionManager.startAccelerometerUpdates(to: .main) { [weak self] (data, error) in
+//            guard let data = data else {
+//                return
+//            }
+//            self?.handleAccelerometerUpdate(data: data)
+//        }
     }
   
     func stop() {
-        self.coreMotionManager.stopAccelerometerUpdates()
+       // self.coreMotionManager.stopAccelerometerUpdates()
+        self.coreMotionManager.stopDeviceMotionUpdates()
         self.deviceOrientation = nil
     }
     
@@ -73,33 +104,17 @@ import CoreMotion
     }
     
     func getPreviewLayerOrientation() -> AVCaptureVideoOrientation {
-        
-        guard shouldUseDeviceOrientation, let deviceOrientation = self.deviceOrientation else {
-            // Depends on layout orientation, not device orientation
-            switch UIApplication.shared.statusBarOrientation {
-            case .portrait, .unknown:
-                return AVCaptureVideoOrientation.portrait
-            case .landscapeLeft:
-                return AVCaptureVideoOrientation.landscapeLeft
-            case .landscapeRight:
-                return AVCaptureVideoOrientation.landscapeRight
-            case .portraitUpsideDown:
-                return AVCaptureVideoOrientation.portraitUpsideDown
-            }
-        }
-        
-        
-        switch deviceOrientation {
+        // Depends on layout orientation, not device orientation
+        switch UIApplication.shared.statusBarOrientation {
+        case .portrait, .unknown:
+            return AVCaptureVideoOrientation.portrait
         case .landscapeLeft:
-            return .landscapeRight
+            return AVCaptureVideoOrientation.landscapeLeft
         case .landscapeRight:
-            return .landscapeLeft
+            return AVCaptureVideoOrientation.landscapeRight
         case .portraitUpsideDown:
-            return .portraitUpsideDown
-        default:
-            return .portrait
+            return AVCaptureVideoOrientation.portraitUpsideDown
         }
-        
     }
     
     func getVideoOrientation() -> AVCaptureVideoOrientation? {
@@ -118,7 +133,6 @@ import CoreMotion
     }
     
     private func handleAccelerometerUpdate(data: CMAccelerometerData){
-        let current = deviceOrientation
         if(abs(data.acceleration.y) < abs(data.acceleration.x)){
             if(data.acceleration.x > 0){
                 deviceOrientation = UIDeviceOrientation.landscapeRight
@@ -132,12 +146,12 @@ import CoreMotion
                 deviceOrientation = UIDeviceOrientation.portrait
             }
         }
-        
-        if(current != deviceOrientation){
-            if let deviceOrientation = deviceOrientation {
-                changeListener?(deviceOrientation)
-            }
-        }
+        guard let controller = controller else {return}
+
+        guard let deviceOrientation = deviceOrientation else {return}
+        guard deviceOrientation != controller.lastDeviceOrientation else { return }
+        controller.updateOrientation(deviceOrientation)
+              
     }
 }
 

@@ -176,17 +176,11 @@ import AVFoundation
          }
      }
     
-    public var shouldUseDeviceOrientationForPreview  = false {
-        didSet {
-            orientation.shouldUseDeviceOrientationForPreview = shouldUseDeviceOrientationForPreview
-        }
-    }
-    
     
 
 	/// Sets wether the taken photo or video should be oriented according to the device orientation
 
-    public var shouldUseDeviceOrientation  = false {
+    public var shouldUseDeviceOrientation      = false {
         didSet {
             orientation.shouldUseDeviceOrientation = shouldUseDeviceOrientation
         }
@@ -296,16 +290,11 @@ import AVFoundation
     public var previousPanTranslation       : CGFloat = 0.0
 
 	/// Last changed orientation
-    ///
 
-    internal func orientationChanged(){
-        if(shouldUseDeviceOrientationForPreview){
-            updatePreviewLayer()
-        }
-    }
-    
-    public lazy var orientation: Orientation = {
-       return Orientation(controller: self)
+    public lazy var orientation                  : Orientation = {
+        let ret = Orientation()
+        ret.controller = self
+        return ret
     }()
 
     /// Boolean to store when View Controller is notified session is running
@@ -363,6 +352,36 @@ import AVFoundation
 			self.configureSession()
 		}
 	}
+    
+    internal func updateOrientation(_ orientation: UIDeviceOrientation) {
+        
+        if let connection =  self.previewLayer?.videoPreviewLayer.connection  {
+
+            let previewLayerConnection : AVCaptureConnection = connection
+
+            if previewLayerConnection.isVideoOrientationSupported {
+       
+                switch (orientation) {
+                case .portrait: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait)
+                    break
+
+                case .landscapeRight: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeLeft)
+                    break
+
+                case .landscapeLeft: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeRight)
+                    break
+
+                case .portraitUpsideDown: updatePreviewLayer(layer: previewLayerConnection, orientation: .portraitUpsideDown)
+                    break
+
+                default: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait)
+                    break
+                }
+            }
+            
+            lastDeviceOrientation = orientation
+        }
+    }
 
     // MARK: ViewDidLayoutSubviews
 
@@ -371,10 +390,9 @@ import AVFoundation
 
         layer.videoOrientation = orientation
         previewLayer.frame = self.view.bounds
-
     }
     
-    
+    internal var lastDeviceOrientation: UIDeviceOrientation?
     private func updatePreviewLayer() {
            if let connection =  self.previewLayer?.videoPreviewLayer.connection  {
 
@@ -388,25 +406,22 @@ import AVFoundation
 
                    switch (orientation) {
                    case .portrait: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait)
-
                        break
 
                    case .landscapeRight: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeLeft)
-
                        break
 
                    case .landscapeLeft: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeRight)
-
                        break
 
                    case .portraitUpsideDown: updatePreviewLayer(layer: previewLayerConnection, orientation: .portraitUpsideDown)
-
                        break
 
                    default: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait)
-
                        break
                    }
+                   
+                   lastDeviceOrientation = UIDevice.current.orientation
                }
            }
        }
@@ -477,7 +492,7 @@ import AVFoundation
 
 
 	override open func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
+		super.viewDidDisappear(animated)
 
         NotificationCenter.default.removeObserver(self)
         sessionRunning = false
@@ -1048,48 +1063,26 @@ import AVFoundation
         
         @available(iOS 11.0, *)
         func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-            if let error = error {
-                print("[SwiftyCam]: \(error)")
-                completionHandler(false)
-            }else if let imageData = photo.fileDataRepresentation(),
-                     var image = UIImage(data: imageData){
-                
-                if let rectToCrop = self.controller.calculateAspectRatioCrop(Int(image.size.width * image.scale), Int(image.size.height * image.scale)) {
-                    let renderer = UIGraphicsImageRenderer(size: rectToCrop.size)
-                    
-                    let croppedImage = renderer.image { _ in
-                        image.draw(at: CGPoint(x: -rectToCrop.origin.x, y: -rectToCrop.origin.y))
-                    }
-                    image = croppedImage
+            let cgImage: CGImage?
+            #if compiler(>=5.5)
+            cgImage = photo.cgImageRepresentation()
+            #else
+            cgImage = photo.cgImageRepresentation()?.takeUnretainedValue()
+            #endif
+            if let cgImage = cgImage {
+                var image: UIImage
+                let rectToCrop = self.controller.calculateAspectRatioCrop(cgImage.width, cgImage.height)
+                if(rectToCrop != nil){
+                    image = UIImage(cgImage: cgImage.cropping(to: rectToCrop!)!, scale: 1, orientation: self.controller.orientation.getImageOrientation(forCamera: self.controller.currentCamera))
+                }else {
+                    image = UIImage(cgImage: cgImage, scale: 1, orientation: self.controller.orientation.getImageOrientation(forCamera: self.controller.currentCamera))
                 }
-                
+                // Call delegate and return new image
                 DispatchQueue.main.async {
                     self.controller.cameraDelegate?.swiftyCam(self.controller, didTake: image)
                 }
-                
             }else {
-                let cgImage: CGImage?
-                #if compiler(>=5.5)
-                cgImage = photo.cgImageRepresentation()
-                #else
-                cgImage = photo.cgImageRepresentation()?.takeUnretainedValue()
-                #endif
-                if let cgImage = cgImage {
-                    var image: UIImage
-                    let rectToCrop = self.controller.calculateAspectRatioCrop(cgImage.width, cgImage.height)
-                    let orientation = self.controller.orientation.getImageOrientation(forCamera: self.controller.currentCamera)
-                    if(rectToCrop != nil){
-                        image = UIImage(cgImage: cgImage.cropping(to: rectToCrop!)!, scale: 1, orientation: orientation)
-                    }else {
-                        image = UIImage(cgImage: cgImage, scale: 1, orientation: orientation)
-                    }
-                    // Call delegate and return new image
-                    DispatchQueue.main.async {
-                        self.controller.cameraDelegate?.swiftyCam(self.controller, didTake: image)
-                    }
-                }else {
-                    completionHandler(false)
-                }
+                completionHandler(false)
             }
         }
         
@@ -1623,7 +1616,7 @@ extension SwiftyCamViewController : UIGestureRecognizerDelegate {
 
 	public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
 		if gestureRecognizer.isKind(of: UIPinchGestureRecognizer.self) {
-			beginZoomScale = zoomScale
+			beginZoomScale = zoomScale;
 		}
 		return true
 	}

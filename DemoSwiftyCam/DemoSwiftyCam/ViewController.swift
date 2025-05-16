@@ -32,8 +32,9 @@ class ViewController: SwiftyCamViewController, SwiftyCamViewControllerDelegate {
         shouldPrompToAppSettings = true
 		cameraDelegate = self
 		maximumVideoDuration = 10.0
-        shouldUseDeviceOrientation = true
-        allowAutoRotate = true
+//        shouldUseDeviceOrientation = true
+//        shouldUseDeviceOrientationForPreview = true
+       // allowAutoRotate = true
         audioEnabled = true
         
         // disable capture button until session starts
