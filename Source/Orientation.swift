@@ -67,9 +67,9 @@ import CoreMotion
             let attitude = motion.attitude
             let orientation = self?.orientationFrom(attitude: attitude)
 
-            if let orientation = orientation {
+            if let controller = self?.controller, let orientation = orientation {
                 self?.deviceOrientation = orientation
-                self?.controller?.updateOrientation(orientation)
+                controller.updateOrientation(orientation)
             }
         }
         

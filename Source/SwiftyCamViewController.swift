@@ -353,7 +353,7 @@ import AVFoundation
 		}
 	}
     
-    internal func updateOrientation(_ orientation: UIDeviceOrientation) {
+    internal func updateOrientation(_ orientation: UIDeviceOrientation, updateVideoOrientation: Bool = false) {
         
         if let connection =  self.previewLayer?.videoPreviewLayer.connection  {
 
@@ -362,19 +362,19 @@ import AVFoundation
             if previewLayerConnection.isVideoOrientationSupported {
        
                 switch (orientation) {
-                case .portrait: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait)
+                case .portrait: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait, updateVideoOrientation: updateVideoOrientation)
                     break
 
-                case .landscapeRight: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeLeft)
+                case .landscapeRight: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeLeft, updateVideoOrientation: updateVideoOrientation)
                     break
 
-                case .landscapeLeft: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeRight)
+                case .landscapeLeft: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeRight, updateVideoOrientation: updateVideoOrientation)
                     break
 
-                case .portraitUpsideDown: updatePreviewLayer(layer: previewLayerConnection, orientation: .portraitUpsideDown)
+                case .portraitUpsideDown: updatePreviewLayer(layer: previewLayerConnection, orientation: .portraitUpsideDown, updateVideoOrientation: updateVideoOrientation)
                     break
 
-                default: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait)
+                default: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait, updateVideoOrientation: updateVideoOrientation)
                     break
                 }
             }
@@ -386,9 +386,11 @@ import AVFoundation
     // MARK: ViewDidLayoutSubviews
 
     /// ViewDidLayoutSubviews() Implementation
-    private func updatePreviewLayer(layer: AVCaptureConnection, orientation: AVCaptureVideoOrientation) {
-
-        layer.videoOrientation = orientation
+    private func updatePreviewLayer(layer: AVCaptureConnection, orientation: AVCaptureVideoOrientation, updateVideoOrientation: Bool = true) {
+        
+        if(updateVideoOrientation){
+            layer.videoOrientation = orientation
+        }
         previewLayer.frame = self.view.bounds
     }
     
@@ -587,7 +589,11 @@ import AVFoundation
 			flashView?.alpha = 0.85
 			previewLayer.addSubview(flashView!)
 		}
-
+        
+        if let orientation = orientation.deviceOrientation {
+            updateOrientation(orientation, updateVideoOrientation: true)
+        }
+ 
         //Must be fetched before on main thread
         let previewOrientation = previewLayer.videoPreviewLayer.connection!.videoOrientation
 
