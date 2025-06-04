@@ -388,9 +388,9 @@ import AVFoundation
     /// ViewDidLayoutSubviews() Implementation
     private func updatePreviewLayer(layer: AVCaptureConnection, orientation: AVCaptureVideoOrientation, updateVideoOrientation: Bool = true) {
         
-        if(updateVideoOrientation){
-            layer.videoOrientation = orientation
-        }
+//        if(updateVideoOrientation){
+//            layer.videoOrientation = orientation
+//        }
         previewLayer.frame = self.view.bounds
     }
     
