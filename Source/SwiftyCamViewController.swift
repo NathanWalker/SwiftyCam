@@ -291,7 +291,11 @@ import AVFoundation
 
 	/// Last changed orientation
 
-    public var orientation                  : Orientation = Orientation()
+    public lazy var orientation                  : Orientation = {
+        let ret = Orientation()
+        ret.controller = self
+        return ret
+    }()
 
     /// Boolean to store when View Controller is notified session is running
 
@@ -348,19 +352,49 @@ import AVFoundation
 			self.configureSession()
 		}
 	}
+    
+    internal func updateOrientation(_ orientation: UIDeviceOrientation, updateVideoOrientation: Bool = false) {
+        
+        if let connection =  self.previewLayer?.videoPreviewLayer.connection  {
+
+            let previewLayerConnection : AVCaptureConnection = connection
+
+            if previewLayerConnection.isVideoOrientationSupported {
+       
+                switch (orientation) {
+                case .portrait: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait, updateVideoOrientation: updateVideoOrientation)
+                    break
+
+                case .landscapeRight: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeLeft, updateVideoOrientation: updateVideoOrientation)
+                    break
+
+                case .landscapeLeft: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeRight, updateVideoOrientation: updateVideoOrientation)
+                    break
+
+                case .portraitUpsideDown: updatePreviewLayer(layer: previewLayerConnection, orientation: .portraitUpsideDown, updateVideoOrientation: updateVideoOrientation)
+                    break
+
+                default: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait, updateVideoOrientation: updateVideoOrientation)
+                    break
+                }
+            }
+            
+            lastDeviceOrientation = orientation
+        }
+    }
 
     // MARK: ViewDidLayoutSubviews
 
     /// ViewDidLayoutSubviews() Implementation
-    private func updatePreviewLayer(layer: AVCaptureConnection, orientation: AVCaptureVideoOrientation) {
-
-        layer.videoOrientation = orientation
-
+    private func updatePreviewLayer(layer: AVCaptureConnection, orientation: AVCaptureVideoOrientation, updateVideoOrientation: Bool = true) {
+        
+//        if(updateVideoOrientation){
+//            layer.videoOrientation = orientation
+//        }
         previewLayer.frame = self.view.bounds
-
     }
     
-    
+    internal var lastDeviceOrientation: UIDeviceOrientation?
     private func updatePreviewLayer() {
            if let connection =  self.previewLayer?.videoPreviewLayer.connection  {
 
@@ -374,25 +408,22 @@ import AVFoundation
 
                    switch (orientation) {
                    case .portrait: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait)
-
                        break
 
                    case .landscapeRight: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeLeft)
-
                        break
 
                    case .landscapeLeft: updatePreviewLayer(layer: previewLayerConnection, orientation: .landscapeRight)
-
                        break
 
                    case .portraitUpsideDown: updatePreviewLayer(layer: previewLayerConnection, orientation: .portraitUpsideDown)
-
                        break
 
                    default: updatePreviewLayer(layer: previewLayerConnection, orientation: .portrait)
-
                        break
                    }
+                   
+                   lastDeviceOrientation = UIDevice.current.orientation
                }
            }
        }
@@ -558,7 +589,11 @@ import AVFoundation
 			flashView?.alpha = 0.85
 			previewLayer.addSubview(flashView!)
 		}
-
+        
+        if let orientation = orientation.deviceOrientation {
+            updateOrientation(orientation, updateVideoOrientation: true)
+        }
+ 
         //Must be fetched before on main thread
         let previewOrientation = previewLayer.videoPreviewLayer.connection!.videoOrientation
 
@@ -937,70 +972,6 @@ import AVFoundation
         return nil
     }
 
-
-	/// Orientation management
-
-	// @objc public func subscribeToDeviceOrientationChangeNotifications() {
-	// 	self.deviceOrientation = UIDevice.current.orientation
-	// 	NotificationCenter.default.addObserver(self, selector: #selector(deviceDidRotate), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
-	// }
-
-	// @objc public func unsubscribeFromDeviceOrientationChangeNotifications() {
-	// 	NotificationCenter.default.removeObserver(self, name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
-	// 	self.deviceOrientation = nil
-	// }
-
-	// @objc public func deviceDidRotate() {
-	// 	if !UIDevice.current.orientation.isFlat {
-	// 		self.deviceOrientation = UIDevice.current.orientation
-	// 	}
-	// }
-    
-  //   @objc public func getPreviewLayerOrientation() -> AVCaptureVideoOrientation {
-  //       // Depends on layout orientation, not device orientation
-  //       switch UIApplication.shared.statusBarOrientation {
-  //       case .portrait, .unknown:
-  //           return AVCaptureVideoOrientation.portrait
-  //       case .landscapeLeft:
-  //           return AVCaptureVideoOrientation.landscapeLeft
-  //       case .landscapeRight:
-  //           return AVCaptureVideoOrientation.landscapeRight
-  //       case .portraitUpsideDown:
-  //           return AVCaptureVideoOrientation.portraitUpsideDown
-  //       }
-  //   }
-
-	// @objc public func getVideoOrientation() -> AVCaptureVideoOrientation {
-	// 	guard shouldUseDeviceOrientation, let deviceOrientation = self.deviceOrientation else { return previewLayer!.videoPreviewLayer.connection.videoOrientation }
-
-	// 	switch deviceOrientation {
-	// 	case .landscapeLeft:
-	// 		// keep the same if using front camera
-	// 		return self.currentCamera == .rear ? .landscapeRight : .landscapeLeft;
-	// 	case .landscapeRight:
-	// 		// keep the same if using front camera
-	// 		return self.currentCamera == .rear ? .landscapeLeft : .landscapeRight;
-	// 	case .portraitUpsideDown:
-	// 		return .portraitUpsideDown
-	// 	default:
-	// 		return .portrait
-	// 	}
-	// }
-
-	// @objc public func getImageOrientation(forCamera: CameraSelection) -> UIImageOrientation {
-	// 	guard shouldUseDeviceOrientation, let deviceOrientation = self.deviceOrientation else { return forCamera == .rear ? .right : .leftMirrored }
-
-	// 	switch deviceOrientation {
-	// 	case .landscapeLeft:
-	// 		return forCamera == .rear ? .up : .downMirrored
-	// 	case .landscapeRight:
-	// 		return forCamera == .rear ? .down : .upMirrored
-	// 	case .portraitUpsideDown:
-	// 		return forCamera == .rear ? .left : .rightMirrored
-	// 	default:
-	// 		return forCamera == .rear ? .right : .leftMirrored
-	// 	}
-	// }
 
 	/**
 	Returns a UIImage from Image Data.
