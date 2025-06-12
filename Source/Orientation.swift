@@ -25,24 +25,66 @@ import CoreMotion
     
     public var deviceOrientation : UIDeviceOrientation?
     public let coreMotionManager = CMMotionManager()
+    internal var controller: SwiftyCamViewController?
     
     override public init() {
       super.init()
-        coreMotionManager.accelerometerUpdateInterval = 0.1
+       // coreMotionManager.accelerometerUpdateInterval = 0.1
+        coreMotionManager.deviceMotionUpdateInterval = 0.2
+        coreMotionManager.startDeviceMotionUpdates(using: .xArbitraryZVertical)
+    }
+    
+    func orientationFrom(attitude: CMAttitude) -> UIDeviceOrientation {
+        let pitch = attitude.pitch * (180.0 / .pi)
+        let roll = attitude.roll * (180.0 / .pi)
+
+        if abs(pitch) < 45 {
+            if roll > 45 {
+                return .landscapeRight
+            } else if roll < -45 {
+                return .landscapeLeft
+            }
+        }
+        
+
+        if pitch > 45 {
+            return .portrait
+        } else if pitch < -45 {
+            return .portraitUpsideDown
+        }
+
+
+        return .unknown
     }
     
     func start() {
         self.deviceOrientation = UIDevice.current.orientation
-        coreMotionManager.startAccelerometerUpdates(to: .main) { [weak self] (data, error) in
-            guard let data = data else {
-                return
+        
+        
+        coreMotionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, error in
+            guard let motion = motion else { return }
+
+            let attitude = motion.attitude
+            let orientation = self?.orientationFrom(attitude: attitude)
+
+            if let controller = self?.controller, let orientation = orientation {
+                self?.deviceOrientation = orientation
+                controller.updateOrientation(orientation)
             }
-            self?.handleAccelerometerUpdate(data: data)
         }
+        
+        
+//        coreMotionManager.startAccelerometerUpdates(to: .main) { [weak self] (data, error) in
+//            guard let data = data else {
+//                return
+//            }
+//            self?.handleAccelerometerUpdate(data: data)
+//        }
     }
   
     func stop() {
-        self.coreMotionManager.stopAccelerometerUpdates()
+       // self.coreMotionManager.stopAccelerometerUpdates()
+        self.coreMotionManager.stopDeviceMotionUpdates()
         self.deviceOrientation = nil
     }
     
@@ -104,6 +146,12 @@ import CoreMotion
                 deviceOrientation = UIDeviceOrientation.portrait
             }
         }
+        guard let controller = controller else {return}
+
+        guard let deviceOrientation = deviceOrientation else {return}
+        guard deviceOrientation != controller.lastDeviceOrientation else { return }
+        controller.updateOrientation(deviceOrientation)
+              
     }
 }
 
